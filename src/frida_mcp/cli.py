@@ -26,6 +26,35 @@ global_persistent_scripts = {} # Added for managing persistent scripts
 
 
 @mcp.tool()
+def connect_to_device(
+    host: str = Field(
+        description="Hostname or IP address (and optional port) of the remote Frida device, e.g., '192.168.1.2' or '192.168.1.2:27042'."
+    )
+) -> Dict[str, Any]:
+    """Connect to a remote Frida device using its hostname/IP address.
+
+    This function adds a remote device to Frida's device manager and returns
+    basic information about the connected device.
+    """
+    try:
+        # Frida's API allows adding a remote device via the device manager.
+        # The host string may include a port; if omitted, Frida uses the default.
+        device_manager = frida.get_device_manager()
+        remote_device = device_manager.add_remote_device(host)
+        # Ensure the device is connected (may raise if unreachable)
+        # Access a property to trigger connection validation.
+        _ = remote_device.id
+        return {
+            "id": remote_device.id,
+            "name": remote_device.name,
+            "type": remote_device.type,
+            "host": host,
+        }
+    except Exception as e:
+        raise ValueError(f"Failed to connect to remote device at {host}: {str(e)}")
+
+
+@mcp.tool()
 def enumerate_processes(
     device_id: Optional[str] = Field(default=None, description="Optional ID of the device to enumerate processes from. Uses USB device if not specified.")
 ) -> List[Dict[str, Any]]:
